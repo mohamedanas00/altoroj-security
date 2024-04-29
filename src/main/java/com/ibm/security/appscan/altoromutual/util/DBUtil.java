@@ -244,33 +244,55 @@ public class DBUtil {
 	 * @return user information
 	 * @throws SQLException
 	 */
-	public static User getUserInfo(String username) throws SQLException{
+	public static User getUserInfo(String username) throws SQLException {
 		if (username == null || username.trim().length() == 0)
-			return null; 
-		
-		Connection connection = getConnection();
-		Statement statement = connection.createStatement();
-		ResultSet resultSet =statement.executeQuery("SELECT FIRST_NAME,LAST_NAME,ROLE FROM PEOPLE WHERE USER_ID = '"+ username +"' "); /* BAD - user input should always be sanitized */
-
-		String firstName = null;
-		String lastName = null;
-		String roleString = null;
-		if (resultSet.next()){
-			firstName = resultSet.getString("FIRST_NAME");
-			lastName = resultSet.getString("LAST_NAME");
-			roleString = resultSet.getString("ROLE");
-		}
-		
-		if (firstName == null || lastName == null)
 			return null;
-		
-		User user = new User(username, firstName, lastName);
-		
-		if (roleString.equalsIgnoreCase("admin"))
-			user.setRole(Role.Admin);
-		
-		return user;
+
+		Connection connection = null;
+		PreparedStatement preparedStatement = null;
+		ResultSet resultSet = null;
+
+		try {
+			connection = getConnection();
+
+			// Use PreparedStatement with placeholders to avoid SQL injection
+			String query = "SELECT FIRST_NAME, LAST_NAME, ROLE FROM PEOPLE WHERE USER_ID = ?";
+			preparedStatement = connection.prepareStatement(query);
+			preparedStatement.setString(1, username);
+			resultSet = preparedStatement.executeQuery();
+
+			String firstName = null;
+			String lastName = null;
+			String roleString = null;
+			if (resultSet.next()) {
+				firstName = resultSet.getString("FIRST_NAME");
+				lastName = resultSet.getString("LAST_NAME");
+				roleString = resultSet.getString("ROLE");
+			}
+
+			if (firstName == null || lastName == null)
+				return null;
+
+			User user = new User(username, firstName, lastName);
+
+			if (roleString != null && roleString.equalsIgnoreCase("admin"))
+				user.setRole(Role.Admin);
+
+			return user;
+		} finally {
+			// Close resources in finally block
+			if (resultSet != null) {
+				resultSet.close();
+			}
+			if (preparedStatement != null) {
+				preparedStatement.close();
+			}
+			if (connection != null) {
+				connection.close();
+			}
+		}
 	}
+
 
 	/**
 	 * Get all accounts for the specified user
