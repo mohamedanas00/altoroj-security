@@ -294,30 +294,27 @@ public class DBUtil {
 	}
 
 
-	/**
-	 * Get all accounts for the specified user
-	 * @param username
-	 * @return
-	 * @throws SQLException
-	 */
-	public static Account[] getAccounts(String username) throws SQLException{
-		if (username == null || username.trim().length() == 0)
-			return null; 
-		
-		Connection connection = getConnection();
-		Statement statement = connection.createStatement();
-		ResultSet resultSet =statement.executeQuery("SELECT ACCOUNT_ID, ACCOUNT_NAME, BALANCE FROM ACCOUNTS WHERE USERID = '"+ username +"' "); /* BAD - user input should always be sanitized */
+	public static Account[] getAccounts(String username) throws SQLException {
+		if (username == null || username.trim().isEmpty())
+			return null;
 
-		ArrayList<Account> accounts = new ArrayList<Account>(3);
-		while (resultSet.next()){
-			long accountId = resultSet.getLong("ACCOUNT_ID");
-			String name = resultSet.getString("ACCOUNT_NAME");
-			double balance = resultSet.getDouble("BALANCE"); 
-			Account newAccount = new Account(accountId, name, balance);
-			accounts.add(newAccount);
+		String query = "SELECT ACCOUNT_ID, ACCOUNT_NAME, BALANCE FROM ACCOUNTS WHERE USERID = ?";
+		try (Connection connection = getConnection();
+		     PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setString(1, username);
+
+			try (ResultSet resultSet = statement.executeQuery()) {
+				ArrayList<Account> accounts = new ArrayList<>();
+				while (resultSet.next()) {
+					long accountId = resultSet.getLong("ACCOUNT_ID");
+					String name = resultSet.getString("ACCOUNT_NAME");
+					double balance = resultSet.getDouble("BALANCE");
+					Account newAccount = new Account(accountId, name, balance);
+					accounts.add(newAccount);
+				}
+				return accounts.toArray(new Account[accounts.size()]);
+			}
 		}
-		
-		return accounts.toArray(new Account[accounts.size()]);
 	}
 
 	/**
@@ -455,110 +452,126 @@ public class DBUtil {
 	}
 
 	public static String[] getBankUsernames() {
-		
-		try {
-			Connection connection = getConnection();
-			Statement statement = connection.createStatement();
-			//at the moment this query limits transfers to
-			//transfers between two user accounts
-			ResultSet resultSet =statement.executeQuery("SELECT USER_ID FROM PEOPLE"); 
+		String query = "SELECT USER_ID FROM PEOPLE";
+		try (Connection connection = getConnection();
+		     PreparedStatement statement = connection.prepareStatement(query);
+		     ResultSet resultSet = statement.executeQuery()) {
+			ArrayList<String> users = new ArrayList<>();
 
-			ArrayList<String> users = new ArrayList<String>();
-			
-			while (resultSet.next()){
+			while (resultSet.next()) {
 				String name = resultSet.getString("USER_ID");
 				users.add(name);
 			}
-			
-			return users.toArray(new String[users.size()]);
-		} catch (SQLException e){
+
+			return users.toArray(new String[0]);
+		} catch (SQLException e) {
 			e.printStackTrace();
 			return new String[0];
 		}
 	}
-	
+
 	public static Account getAccount(long accountNo) throws SQLException {
 
 		Connection connection = getConnection();
-		Statement statement = connection.createStatement();
-		ResultSet resultSet =statement.executeQuery("SELECT ACCOUNT_NAME, BALANCE FROM ACCOUNTS WHERE ACCOUNT_ID = "+ accountNo +" "); /* BAD - user input should always be sanitized */
+		PreparedStatement statement = connection.prepareStatement("SELECT ACCOUNT_NAME, BALANCE FROM ACCOUNTS WHERE ACCOUNT_ID = ?");
+		statement.setLong(1, accountNo);
+		ResultSet resultSet = statement.executeQuery();
 
-		ArrayList<Account> accounts = new ArrayList<Account>(3);
-		while (resultSet.next()){
+		ArrayList<Account> accounts = new ArrayList<>(3);
+		while (resultSet.next()) {
 			String name = resultSet.getString("ACCOUNT_NAME");
-			double balance = resultSet.getDouble("BALANCE"); 
+			double balance = resultSet.getDouble("BALANCE");
 			Account newAccount = new Account(accountNo, name, balance);
 			accounts.add(newAccount);
 		}
-		
-		if (accounts.size()==0)
+
+		if (accounts.isEmpty())
 			return null;
-		
+
 		return accounts.get(0);
 	}
+
 
 	public static String addAccount(String username, String acctType) {
 		try {
 			Connection connection = getConnection();
-			Statement statement = connection.createStatement();
-			statement.execute("INSERT INTO ACCOUNTS (USERID,ACCOUNT_NAME,BALANCE) VALUES ('"+username+"','"+acctType+"', 0)");
+			PreparedStatement statement = connection.prepareStatement("INSERT INTO ACCOUNTS (USERID, ACCOUNT_NAME, BALANCE) VALUES (?, ?, 0)");
+			statement.setString(1, username);
+			statement.setString(2, acctType);
+			statement.executeUpdate();
 			return null;
-		} catch (SQLException e){
+		} catch (SQLException e) {
 			return e.toString();
-		}
-	}
-	
-	public static String addSpecialUser(String username, String password, String firstname, String lastname) {
-		try {
-			Connection connection = getConnection();
-			Statement statement = connection.createStatement();
-			statement.execute("INSERT INTO SPECIAL_CUSTOMERS (USER_ID,PASSWORD,FIRST_NAME,LAST_NAME,ROLE) VALUES ('"+username+"','"+password+"', '"+firstname+"', '"+lastname+"','user')");
-			return null;
-		} catch (SQLException e){
-			return e.toString();
-			
-		}
-	}
-	
-	public static String addUser(String username, String password, String firstname, String lastname) {
-		try {
-			Connection connection = getConnection();
-			Statement statement = connection.createStatement();
-			statement.execute("INSERT INTO PEOPLE (USER_ID,PASSWORD,FIRST_NAME,LAST_NAME,ROLE) VALUES ('"+username+"','"+password+"', '"+firstname+"', '"+lastname+"','user')");
-			return null;
-		} catch (SQLException e){
-			return e.toString();
-			
-		}
-	}
-	
-	public static String changePassword(String username, String password) {
-		try {
-			Connection connection = getConnection();
-			Statement statement = connection.createStatement();
-			statement.execute("UPDATE PEOPLE SET PASSWORD = '"+ password +"' WHERE USER_ID = '"+username+"'");
-			return null;
-		} catch (SQLException e){
-			return e.toString();
-			
 		}
 	}
 
-	
-	public static long storeFeedback(String name, String email, String subject, String comments) {
-		try{ 
+
+	public static String addSpecialUser(String username, String password, String firstname, String lastname) {
+		try {
 			Connection connection = getConnection();
-			Statement statement = connection.createStatement();
-			statement.execute("INSERT INTO FEEDBACK (NAME,EMAIL,SUBJECT,COMMENTS) VALUES ('"+name+"', '"+email+"', '"+subject+"', '"+comments+"')", Statement.RETURN_GENERATED_KEYS);
-			ResultSet rs= statement.getGeneratedKeys();
+			PreparedStatement statement = connection.prepareStatement("INSERT INTO SPECIAL_CUSTOMERS (USER_ID, PASSWORD, FIRST_NAME, LAST_NAME, ROLE) VALUES (?, ?, ?, ?, 'user')");
+			statement.setString(1, username);
+			statement.setString(2, password);
+			statement.setString(3, firstname);
+			statement.setString(4, lastname);
+			statement.executeUpdate();
+			return null;
+		} catch (SQLException e) {
+			return e.toString();
+		}
+	}
+
+
+	public static String addUser(String username, String password, String firstname, String lastname) {
+		try {
+			Connection connection = getConnection();
+			PreparedStatement statement = connection.prepareStatement("INSERT INTO PEOPLE (USER_ID, PASSWORD, FIRST_NAME, LAST_NAME, ROLE) VALUES (?, ?, ?, ?, 'user')");
+			statement.setString(1, username);
+			statement.setString(2, password);
+			statement.setString(3, firstname);
+			statement.setString(4, lastname);
+			statement.executeUpdate();
+			return null;
+		} catch (SQLException e) {
+			return e.toString();
+		}
+	}
+
+
+	public static String changePassword(String username, String password) {
+		try {
+			Connection connection = getConnection();
+			PreparedStatement statement = connection.prepareStatement("UPDATE PEOPLE SET PASSWORD = ? WHERE USER_ID = ?");
+			statement.setString(1, password);
+			statement.setString(2, username);
+			statement.executeUpdate();
+			return null;
+		} catch (SQLException e) {
+			return e.toString();
+		}
+	}
+
+
+
+	public static long storeFeedback(String name, String email, String subject, String comments) {
+		try {
+			Connection connection = getConnection();
+			PreparedStatement statement = connection.prepareStatement("INSERT INTO FEEDBACK (NAME, EMAIL, SUBJECT, COMMENTS) VALUES (?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+			statement.setString(1, name);
+			statement.setString(2, email);
+			statement.setString(3, subject);
+			statement.setString(4, comments);
+			statement.executeUpdate();
+			ResultSet rs = statement.getGeneratedKeys();
 			long id = -1;
-			if (rs.next()){
+			if (rs.next()) {
 				id = rs.getLong(1);
 			}
 			return id;
-		} catch (SQLException e){
+		} catch (SQLException e) {
 			Log4AltoroJ.getInstance().logError(e.getMessage());
 			return -1;
 		}
 	}
+
 }
