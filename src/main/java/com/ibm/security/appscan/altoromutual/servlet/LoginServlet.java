@@ -95,6 +95,9 @@ public class LoginServlet extends HttpServlet {
 
 		//Handle the cookie using ServletUtil.establishSession(String)
 		try{
+			if (!validation.isValidInput(username)) {
+				throw new Exception("Invalid input");
+			}
 			Cookie accountCookie = ServletUtil.establishSession(username,session);
 			response.addCookie(accountCookie);
 			response.sendRedirect(request.getContextPath()+"/bank/main.jsp");
