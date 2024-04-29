@@ -398,48 +398,59 @@ public class DBUtil {
 	 * @return
 	 */
 	public static Transaction[] getTransactions(String startDate, String endDate, Account[] accounts, int rowCount) throws SQLException {
-		
+
 		if (accounts == null || accounts.length == 0)
 			return null;
 
-			Connection connection = getConnection();
+		Connection connection = getConnection();
+		PreparedStatement preparedStatement = null;
+		ResultSet resultSet = null;
 
-			
-			Statement statement = connection.createStatement();
-			
-			if (rowCount > 0)
-				statement.setMaxRows(rowCount);
+		try {
+			StringBuilder queryBuilder = new StringBuilder("SELECT * FROM TRANSACTIONS WHERE (");
+			for (int i = 0; i < accounts.length; i++) {
+				if (i > 0) {
+					queryBuilder.append(" OR ");
+				}
+				queryBuilder.append("ACCOUNTID = ?");
+			}
+			queryBuilder.append(")");
 
-			StringBuffer acctIds = new StringBuffer();
-			acctIds.append("ACCOUNTID = " + accounts[0].getAccountId());
-			for (int i=1; i<accounts.length; i++){
-				acctIds.append(" OR ACCOUNTID = "+accounts[i].getAccountId());	
+			if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+				queryBuilder.append(" AND DATE BETWEEN ? AND ?");
+			} else if (startDate != null && !startDate.isEmpty()) {
+				queryBuilder.append(" AND DATE > ?");
+			} else if (endDate != null && !endDate.isEmpty()) {
+				queryBuilder.append(" AND DATE < ?");
 			}
-			
-			String dateString = null;
-			
-			if (startDate != null && startDate.length()>0 && endDate != null && endDate.length()>0){
-				dateString = "DATE BETWEEN '" + startDate + " 00:00:00' AND '" + endDate + " 23:59:59'";
-			} else if (startDate != null && startDate.length()>0){
-				dateString = "DATE > '" + startDate +" 00:00:00'";
-			} else if (endDate != null && endDate.length()>0){
-				dateString = "DATE < '" + endDate + " 23:59:59'";
+
+			queryBuilder.append(" ORDER BY DATE DESC");
+
+			preparedStatement = connection.prepareStatement(queryBuilder.toString());
+
+			// Bind account IDs
+			int parameterIndex = 1;
+			for (Account account : accounts) {
+				preparedStatement.setLong(parameterIndex++, account.getAccountId());
 			}
-			
-			String query = "SELECT * FROM TRANSACTIONS WHERE (" + acctIds.toString() + ") " + ((dateString==null)?"": "AND (" + dateString + ") ") + "ORDER BY DATE DESC" ;
-			ResultSet resultSet = null;
-			
-			try {
-				resultSet = statement.executeQuery(query);
-			} catch (SQLException e){
-				int errorCode = e.getErrorCode();
-				if (errorCode == 30000)
-					throw new SQLException("Date-time query must be in the format of yyyy-mm-dd HH:mm:ss", e);
-				
-				throw e;
+
+			// Bind dates if applicable
+			if (startDate != null && !startDate.isEmpty()) {
+				preparedStatement.setString(parameterIndex++, startDate + " 00:00:00");
 			}
-			ArrayList<Transaction> transactions = new ArrayList<Transaction>();
-			while (resultSet.next()){
+			if (endDate != null && !endDate.isEmpty()) {
+				preparedStatement.setString(parameterIndex, endDate + " 23:59:59");
+			}
+
+			// Set max row count if applicable
+			if (rowCount > 0) {
+				preparedStatement.setMaxRows(rowCount);
+			}
+
+			resultSet = preparedStatement.executeQuery();
+
+			ArrayList<Transaction> transactions = new ArrayList<>();
+			while (resultSet.next()) {
 				int transId = resultSet.getInt("TRANSACTION_ID");
 				long actId = resultSet.getLong("ACCOUNTID");
 				Timestamp date = resultSet.getTimestamp("DATE");
@@ -447,8 +458,18 @@ public class DBUtil {
 				double amount = resultSet.getDouble("AMOUNT");
 				transactions.add(new Transaction(transId, actId, date, desc, amount));
 			}
-			
-			return transactions.toArray(new Transaction[transactions.size()]); 
+
+			return transactions.toArray(new Transaction[0]);
+
+		} finally {
+			// Close resources
+			if (resultSet != null) {
+				resultSet.close();
+			}
+			if (preparedStatement != null) {
+				preparedStatement.close();
+			}
+		}
 	}
 
 	public static String[] getBankUsernames() {
