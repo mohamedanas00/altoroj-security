@@ -38,14 +38,25 @@ function StateChangeForJSON()
 {
 	if(xmlHttp.readyState == 4 && xmlHttp.status == 200)
 	{
-		var jsonObj = eval('('+ xmlHttp.responseText + ')');
-		var jsonFetchHostStatus = jsonObj["HostStatus"];
-		var jsonFetchHostName=jsonObj["HostName"];
-		//get JSON values and output
-		x=document.getElementById('FetchHostName');
-		x.innerHTML=jsonFetchHostName;
-		x=document.getElementById('FetchHostStatus');
-		x.innerHTML=jsonFetchHostStatus;
+		var jsonObj;
+		try {
+			jsonObj = JSON.parse(xmlHttp.responseText);
+			// Process the JSON data here
+			var jsonFetchHostStatus = jsonObj["HostStatus"];
+			var jsonFetchHostName = jsonObj["HostName"];
+			// Display JSON values
+			x = document.getElementById('FetchHostName');
+			x.innerHTML = jsonFetchHostName;
+			x = document.getElementById('FetchHostStatus');
+			x.innerHTML = jsonFetchHostStatus;
+		} catch (e) {
+			// Handle parsing error
+			x = document.getElementById('FetchHostName');
+			x.innerHTML = sLastHostName;
+			x = document.getElementById('FetchHostStatus');
+			x.innerHTML = 'There was an error processing the server response.';
+		}
+
 	}
 	else if(xmlHttp.readyState == 4 && xmlHttp.status == 500)
 	{
