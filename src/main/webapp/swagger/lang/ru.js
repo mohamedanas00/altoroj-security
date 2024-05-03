@@ -13,6 +13,8 @@ const translations = {
 
 // Replace hardcoded strings
 window.SwaggerTranslator.learn({
+    "Username": translations.Username,
+    "Password": translations.Password,
     "Warning: Deprecated": "Ворнинг: Депрекейтед",
     "Implementation Notes": "Заметки",
     "Response Class": "Пример ответа",
@@ -41,8 +43,6 @@ window.SwaggerTranslator.learn({
     "Model Schema": "Структура",
     "Model": "Описание",
     "apply": "применить",
-    "Username": translations.Username,
-    "Password": translations.Password,
     "Terms of service": "Условия использования",
     "Created by": "Разработано",
     "See more at": "Еще тут",

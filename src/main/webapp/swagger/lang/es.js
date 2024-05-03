@@ -1,7 +1,18 @@
 'use strict';
+// Read config.properties file
+const PropertiesReader = require('properties-reader');
+const config = PropertiesReader('config.properties');
 
+// Define translations
+const translations = {
+    "UsernameES": config.get('swagger.usernameES'),
+    "passwordES": config.get('swagger.passwordES'),
+    // Add other translations as needed
+};
 /* jshint quotmark: double */
 window.SwaggerTranslator.learn({
+    "Username": translations.UsernameES,
+    "Password": translations.passwordES,
     "Warning: Deprecated":"Advertencia: Obsoleto",
     "Implementation Notes":"Notas de implementación",
     "Response Class":"Clase de la Respuesta",
@@ -30,8 +41,6 @@ window.SwaggerTranslator.learn({
     "Model Schema":"Esquema del Modelo",
     "Model":"Modelo",
     "apply":"aplicar",
-    "Username":"Nombre de usuario",
-    "Password":"Contraseña",
     "Terms of service":"Términos de Servicio",
     "Created by":"Creado por",
     "See more at":"Ver más en",
