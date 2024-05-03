@@ -12,7 +12,7 @@ vulnerabilities that were created expressly for demonstrating the functionality 
 application security testing tools. These vulnerabilities may present risks to the
 technical environment in which the application is installed. You must delete and
 uninstall this demonstration application upon completion of the demonstration for
-which it is intended. 
+which it is intended.
 
 IBM DISCLAIMS ALL LIABILITY OF ANY KIND RESULTING FROM YOUR USE OF THE APPLICATION
 OR YOUR FAILURE TO DELETE THE APPLICATION FROM YOUR ENVIRONMENT UPON COMPLETION OF
@@ -23,20 +23,20 @@ ENVIRONMENT. YOU ACKNOWLEDGE AND ACCEPT ALL RISKS ASSOCIATED WITH THE USE OF THE
 IBM AltoroJ
 (c) Copyright IBM Corp. 2008, 2013 All Rights Reserved.
 */
-%> 
-    
+%>
+
 <jsp:include page="header.jspf"/>
 
 <div id="wrapper" style="width: 99%;">
 	<jsp:include page="toc.jspf"/>
     <td valign="top" colspan="3" class="bb">
-		<%		
+		<%
 		java.lang.String content = request.getParameter("content");
 		if (content == null)
 			content = "default.htm";
 		else
 			content = request.getParameter("content");
-		
+
 		if (ServletUtil.isAppPropertyTrue("advancedStaticPageProcessing")){
 			String path  = request.getSession().getServletContext().getRealPath("/static");
 
@@ -48,7 +48,7 @@ IBM AltoroJ
 	                 String command = "";
 					 String shell = "";
 					 String shellarg = "";
-					 
+
 	                 if(System.getProperty("os.name").toLowerCase().contains("windows"))
 	                 {
 	                	 shell = "cmd";
@@ -61,8 +61,14 @@ IBM AltoroJ
 	                	 shellarg = "-c";
 	                	 command = "cat '" + path + "/" + content +"'";
 	                 }
+						// Define the command and its arguments separately
+					  String[] commd = {shell, shellarg, command};
+					  // Use ProcessBuilder instead of Runtime.exec
+					  ProcessBuilder pb = new ProcessBuilder(commd);
 
-	                 Process proc = Runtime.getRuntime().exec(new String[] {shell, shellarg, command});
+					  // Start the process
+					  Process proc = pb.start();
+//	                 Process proc = Runtime.getRuntime().exec(new String[] {shell, shellarg, command});
 	                 InputStream is = null;
 	                 int exitVal = 0;
 	                 try
@@ -92,19 +98,19 @@ IBM AltoroJ
 			<%  } catch (Exception e) { %>
 				<p>Failed due to <%= ServletUtil.sanitzieHtmlWithRegex(e.getLocalizedMessage()) %></p>
 	 		<% } %>
-		<% 
+		<%
 		} else {
 			content = "static/"+content;
 		%>
-		
+
 		<%  try { %>
 			<jsp:include page="<%= content %>"/>
 		<%  } catch (Exception e) { %>
 			<p>Failed due to <%= ServletUtil.sanitzieHtmlWithRegex(e.getLocalizedMessage()) %></p>
- 		<% } 
+ 		<% }
 		}%>
     </td>
-	
+
 </div>
 
 <jsp:include page="footer.jspf"/>
