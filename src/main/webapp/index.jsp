@@ -1,6 +1,7 @@
 <%@page import="java.io.BufferedReader"%>
 <%@page import="java.io.FileReader"%>
 <%@page import="java.io.File"%>
+<%@page import="javax.servlet.ServletContext"%>
 <%@page import="com.ibm.security.appscan.altoromutual.util.ServletUtil"%>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
 		 pageEncoding="ISO-8859-1"%>
@@ -36,23 +37,25 @@
 				content = "default.htm";
 			}
 
-			if (ServletUtil.isAppPropertyTrue("advancedStaticPageProcessing")) {
-				String path = request.getSession().getServletContext().getRealPath("/static");
+			// Access the ServletContext using the application object
+			ServletContext context = application;
 
+			// Determine the base directory for static content
+			String basePath = context.getRealPath("/static");
+
+			// Construct the full path
+			String fullPath = basePath + File.separator + content;
+
+			// Check if the full path is within the base directory
+			if (fullPath.startsWith(basePath) && new File(fullPath).exists()) {
 				String text = "";
 				try {
-					// Load file content directly without using shell commands
-					File file = new File(path, content);
-					if (file.exists() && file.isFile()) {
-						BufferedReader reader = new BufferedReader(new FileReader(file));
-						String line;
-						while ((line = reader.readLine()) != null) {
-							text += line + "\n";
-						}
-						reader.close();
-					} else {
-						text = "File not found";
+					BufferedReader reader = new BufferedReader(new FileReader(fullPath));
+					String line;
+					while ((line = reader.readLine()) != null) {
+						text += line + "\n";
 					}
+					reader.close();
 				} catch (Exception e) {
 					text = "Failed due to " + ServletUtil.sanitzieHtmlWithRegex(e.getLocalizedMessage());
 				}
@@ -60,21 +63,12 @@
 		<%= text %>
 		<%
 		} else {
-			// Handle static content without command execution
-			content = "static/" + content;
-			try {
 		%>
-		<jsp:include page="<%= content %>"/>
+		<p>Invalid content</p>
 		<%
-		} catch (Exception e) {
-		%>
-		<p>Failed due to <%= ServletUtil.sanitzieHtmlWithRegex(e.getLocalizedMessage()) %></p>
-		<%
-				}
 			}
 		%>
 	</td>
-
 </div>
 
 <jsp:include page="footer.jspf"/>
