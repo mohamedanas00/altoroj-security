@@ -88,13 +88,19 @@ public class LoginServlet extends HttpServlet {
 			return;
 		}
 
-		//Handle the cookie using ServletUtil.establishSession(String)
-		try{
-			Cookie accountCookie = ServletUtil.establishSession(username,session);
+		try {
+			// Establish the session and get the cookie
+			Cookie accountCookie = ServletUtil.establishSession(username, session);
+
+			// Mark the cookie as secure
+			accountCookie.setSecure(true);
+
+			// Add the cookie to the response
 			response.addCookie(accountCookie);
-			response.sendRedirect(request.getContextPath()+"/bank/main.jsp");
-		}
-		catch (Exception ex){
+
+			// Redirect the user
+			response.sendRedirect(request.getContextPath() + "/bank/main.jsp");
+		} catch (Exception ex) {
 			ex.printStackTrace();
 			response.sendError(500);
 		}
