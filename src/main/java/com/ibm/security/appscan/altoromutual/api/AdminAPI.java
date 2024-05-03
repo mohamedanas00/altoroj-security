@@ -13,7 +13,6 @@ import org.apache.wink.json4j.*;
 
 import com.ibm.security.appscan.altoromutual.util.DBUtil;
 import com.ibm.security.appscan.altoromutual.util.ServletUtil;
-
 @Path("/admin")
 public class AdminAPI extends AltoroAPI {
 	
@@ -66,7 +65,6 @@ public class AdminAPI extends AltoroAPI {
 	@Path("/addUser")
 	public Response addUser(String bodyJSON, @Context HttpServletRequest request) throws IOException{
 		JSONObject bodyJson= new JSONObject();
-		
 		//Checking if user is logged in
 		
 		String firstname;
@@ -100,6 +98,7 @@ public class AdminAPI extends AltoroAPI {
 		String error = null;
 		
 		if (ServletUtil.getAppProperty("enableAdminFunctions").equalsIgnoreCase("true"))
+			//tobanana
 			error = DBUtil.addUser(username, password1, firstname, lastname);
 		
 		if (error != null)

@@ -19,6 +19,8 @@ IBM AltoroJ
 package com.ibm.security.appscan.altoromutual.util;
 
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 import javax.naming.Context;
@@ -402,6 +404,8 @@ public class DBUtil {
 		if (accounts == null || accounts.length == 0)
 			return null;
 
+		// Date format for validation
+
 		Connection connection = getConnection();
 		PreparedStatement preparedStatement = null;
 		ResultSet resultSet = null;
@@ -439,7 +443,7 @@ public class DBUtil {
 				preparedStatement.setString(parameterIndex++, startDate + " 00:00:00");
 			}
 			if (endDate != null && !endDate.isEmpty()) {
-				preparedStatement.setString(parameterIndex, endDate + " 23:59:59");
+				preparedStatement.setString(parameterIndex++, endDate + " 23:59:59");
 			}
 
 			// Set max row count if applicable
@@ -471,6 +475,7 @@ public class DBUtil {
 			}
 		}
 	}
+
 
 	public static String[] getBankUsernames() {
 		String query = "SELECT USER_ID FROM PEOPLE";
